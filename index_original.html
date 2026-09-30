@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="PatternDex: Learning Interaction Patterns to Guide Reinforcement Learning of Bimanual Dexterous Manipulation of Articulated Objects">
+    <meta name="keywords" content="PatternDex, dexterous manipulation, bimanual, articulated objects, reinforcement learning, cross-embodiment">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>PatternDex: Learning Interaction Patterns to Guide Reinforcement Learning of Bimanual Dexterous Manipulation of Articulated Objects</title>
+
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+    <link rel="stylesheet" href="./static/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+    <link rel="stylesheet" href="./static/css/index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left: '\\(', right: '\\)', display: false}, {left: '$$', right: '$$', display: true}]});"></script>
+</head>
+<body>
+
+    <section class="hero">
+        <div class="hero-body">
+            <div class="container is-max-widescreen">
+                <div class="columns is-centered">
+                    <div class="column has-text-centered">
+                        <h1 class="title is-1 publication-title">PatternDex:<br><span class="publication-subtitle">Learning Interaction Patterns to Guide Reinforcement Learning of Bimanual Dexterous Manipulation of Articulated Objects</span></h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Overview figure -->
+    <section class="section" style="padding-top: 0">
+        <div class="container is-max-widescreen">
+            <img src="./static/images/overview.png" class="interpolation-image" alt="Overview of PatternDex"
+                style="display: block; width: 100%; margin-left: auto; margin-right: auto" />
+        </div>
+    </section>
+
+    <section class="section section-divided">
+        <div class="container is-max-widescreen">
+            <div class="has-text-centered">
+                <div>
+                    <h2 class="title is-3">Abstract</h2>
+                    <div class="content has-text-justified">
+                        <p style="font-size: 125%">
+                            In this paper, we develop a method that enables bimanual dexterous hands to manipulate articulated objects
+                            with a high success rate without suffering from an embodiment gap. We observe that the correlation between hand motions
+                            and object motions is dictated by the object rather than the hands and can be learned from human-object demonstrations.
+                            Based on this observation, we propose <b>PatternDex</b>, a method that learns this correlation and represents it as a token
+                            sequence, which we call an <i>interaction pattern</i>. From this pattern, PatternDex estimates the wrist motions and contact
+                            points that fit the target robot, and then trains a reinforcement learning policy that exploits these estimates as guidance.
+                            Since the guidance fits the target embodiment, the policy explores only the actions that the target robot can execute and thus
+                            achieves high success rates. PatternDex also requires only simple fine-tuning to train a new robot, since it can reuse the
+                            learned interaction pattern. We evaluate PatternDex with bimanual dexterous hands on human demonstrations from the ARCTIC
+                            dataset. PatternDex achieves, on average, a 92.8% success rate with Allegro hands, while the state-of-the-art baseline
+                            achieves 52.2%. Also, it achieves success rates above 70% with three other robot hands after fine-tuning alone. Furthermore,
+                            we verify that the learned policy transfers well to a real-world task of opening a microwave.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Video -->
+    <section class="section section-divided">
+        <div class="container is-max-widescreen">
+            <div class="has-text-centered">
+                <div>
+                    <h2 class="title is-3">Video</h2>
+                    <video controls muted playsinline width="100%" style="border-radius: 5px;">
+                        <source src="./static/videos/supplementary_video.mp4" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Method -->
+    <section class="section section-divided">
+        <div class="container is-max-widescreen">
+            <div class="rows">
+                <div class="rows is-centered ">
+                    <div class="row is-full-width has-text-centered">
+                        <h2 class="title is-2">Method</h2>
+                    </div>
+                    <br>
+                    <div class="row is-full-width">
+                        <h2 class="title is-4">Overview of PatternDex model</h2>
+                    </div>
+                    <img src="./static/images/method.png" class="interpolation-image" alt="PatternDex model"
+                        style="display: block; width: 100%; margin-left: auto; margin-right: auto" />
+                    <br>
+                    <div class="columns">
+                        <div class="column">
+                            <h2 class="title is-5">1. Interaction Pattern Encoder</h2>
+                            <span style="font-size: 115%">
+                                A spatial network \(f\) (MLP) encodes the object state and the human wrist pose at each frame into a spatial token
+                                that describes the relative pose of the wrists with respect to the object. A temporal network \(\mathcal{T}\) (4 Transformer
+                                layers, 4 heads) stacks these tokens over a chunk of <span style="white-space: nowrap">\(H+1 = 64\)</span> frames and learns how they influence one another.
+                                The final hidden state is the interaction pattern \(P_I\), which contains information independent of the
+                                human hand and can therefore be shared across embodiments.
+                            </span>
+                        </div>
+                        <div class="column is-narrow step-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="column">
+                            <h2 class="title is-5">2. Interaction Pattern Decoder</h2>
+                            <span style="font-size: 115%">
+                                An embodiment encoder \(\phi\) turns the robot hand description (number of joints, link lengths and widths of each finger
+                                and the palm, parsed from URDF) into embodiment tokens, which are concatenated with \(P_I\) as memory \(\mathcal{M}\).
+                                Following ACT-style chunk-wise prediction, a 6-layer Transformer decoder \(\mathcal{D}\) with learnable queries \(Q\) cross-attends
+                                to this memory and outputs, through a wrist head and a contact head, the robot wrist motions and the contact points
+                                for the whole chunk at once. For a new robot hand, only \(\mathcal{D}\) and \(\phi\) are fine-tuned while the encoder stays frozen.
+                            </span>
+                        </div>
+                        <div class="column is-narrow step-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="column">
+                            <h2 class="title is-5">3. Guided Policy Learning</h2>
+                            <span style="font-size: 115%">
+                                A PPO policy \(\pi_\theta\) receives the current state, the reference object trajectory, and the estimated contact points, and outputs
+                                the finger joint targets of both hands together with a residual correction on top of the estimated wrist motions.
+                                The reward is the sum of an <b>object reward</b>, which measures how closely the manipulated object tracks the reference
+                                in position, rotation, and articulation angle, and a <b>contact reward</b>, which rewards fingertips and palm for covering
+                                the estimated contact points and penalizes fingertips that touch the object far from them.
+                            </span>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row is-full-width">
+                        <h2 class="title is-4">Interaction Pattern</h2>
+                    </div>
+                    <div class="columns is-vcentered">
+                        <div class="column is-one-third has-text-centered">
+                            <p class="video-sub">Human demonstration (ARCTIC)</p>
+                            <video autoplay muted loop playsinline width="100%" style="border-radius: 5px;" aria-label="Human opening the microwave">
+                                <source src="./static/videos/sim/Allegro/pattern_microwave.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <p class="video-sub">Interaction pattern: encode and decode</p>
+                            <img src="./static/images/pattern_fig.png" class="interpolation-image" alt="Interaction pattern for opening the microwave"
+                                style="display: block; width: 100%; margin-left: auto; margin-right: auto" />
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <p class="video-sub">Estimated Allegro wrist motions and contact points</p>
+                            <video autoplay muted loop playsinline width="100%" style="border-radius: 5px;">
+                                <source src="./static/videos/sim/Allegro/allegro_mw_prior.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                    </div>
+                    <span style="font-size: 110%">
+                        <span style="font-weight: bold">Interaction pattern for opening the microwave.</span>
+                        The object trajectory is shown with its articulation angle only (dashed orange). The human wrist motions
+                        (red for the left hand, blue for the right hand) change as the articulation angle increases, and the interaction
+                        pattern encodes this change. The light red and light blue curves are Allegro wrist motions estimated from the
+                        interaction pattern. They preserve the shape of the human wrist motions and are shifted back according to the
+                        size of Allegro, which shows that the estimated wrist motions are adjusted to the robot.
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Simulation results -->
+    <section class="section section-divided">
+        <div class="container is-max-widescreen">
+            <div class="rows">
+                <div class="rows is-centered ">
+                    <div class="row is-full-width has-text-centered">
+                        <h2 class="title is-2">Simulation Results</h2>
+                    </div>
+                    <br>
+                    <div class="row is-full-width">
+                        <h2 class="title is-4 hand-title hand-title-left">
+                            <img src="./static/images/allegro_hand.png" alt="Allegro Hand" class="hand-icon" />
+                            <span>Allegro Hand</span>
+                        </h2>
+                    </div>
+                    <div class="columns is-multiline" id="allegro-row">
+                        <div class="column is-one-third has-text-centered">
+                            <p style="font-size: 120%"><b>Box</b> <span class="video-sub">SR 99.9%</span></p>
+                            <video class="grid-video" autoplay muted loop playsinline width="100%" style="border-radius: 5px;" aria-label="Allegro hand: Box">
+                                <source src="./static/videos/sim/Allegro/box.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <p style="font-size: 120%"><b>Espresso machine</b> <span class="video-sub">SR 98.7%</span></p>
+                            <video class="grid-video" autoplay muted loop playsinline width="100%" style="border-radius: 5px;" aria-label="Allegro hand: Espresso machine">
+                                <source src="./static/videos/sim/Allegro/espresso.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <p style="font-size: 120%"><b>Laptop</b> <span class="video-sub">SR 94.2%</span></p>
+                            <video class="grid-video" autoplay muted loop playsinline width="100%" style="border-radius: 5px;" aria-label="Allegro hand: Laptop">
+                                <source src="./static/videos/sim/Allegro/laptop.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <p style="font-size: 120%"><b>Microwave</b> <span class="video-sub">SR 98.6%</span></p>
+                            <video class="grid-video" autoplay muted loop playsinline width="100%" style="border-radius: 5px;" aria-label="Allegro hand: Microwave">
+                                <source src="./static/videos/sim/Allegro/microwave.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <p style="font-size: 120%"><b>Mixer</b> <span class="video-sub">SR 99.5%</span></p>
+                            <video class="grid-video" autoplay muted loop playsinline width="100%" style="border-radius: 5px;" aria-label="Allegro hand: Mixer">
+                                <source src="./static/videos/sim/Allegro/mixer.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <p style="font-size: 120%"><b>Notebook</b> <span class="video-sub">SR 66.0%</span></p>
+                            <video class="grid-video" autoplay muted loop playsinline width="100%" style="border-radius: 5px;" aria-label="Allegro hand: Notebook">
+                                <source src="./static/videos/sim/Allegro/notebook.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row is-full-width">
+                        <h2 class="title is-4">Cross-Embodiments</h2>
+                    </div>
+                    <div class="columns" id="embodiment-carousels">
+                        <div class="column is-one-third has-text-centered">
+                            <h2 class="title is-5 hand-title">
+                                <img src="./static/images/shadow_hand.png" alt="Shadow Hand" class="hand-icon" />
+                                <span>Shadow Hand</span>
+                            </h2>
+                            <div class="carousel" data-hand="Shadow">
+                                <video class="carousel-img" autoplay muted loop playsinline style="display: block; width: 100%; border-radius: 5px;" aria-label="Shadow Hand: Box" src="./static/videos/sim/Shadow/box.mp4"></video>
+                                <div class="carousel-controls">
+                                    <button class="carousel-btn carousel-prev" aria-label="Previous object"><i class="fas fa-chevron-left"></i></button>
+                                    <span class="carousel-caption"><b>Box</b> &middot; SR 96.3%</span>
+                                    <button class="carousel-btn carousel-next" aria-label="Next object"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                                <div class="carousel-dots"></div>
+                            </div>
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <h2 class="title is-5 hand-title">
+                                <img src="./static/images/paxini_hand.png" alt="Paxini Hand" class="hand-icon" />
+                                <span>Paxini Hand</span>
+                            </h2>
+                            <div class="carousel" data-hand="Paxini">
+                                <video class="carousel-img" autoplay muted loop playsinline style="display: block; width: 100%; border-radius: 5px;" aria-label="Paxini Hand: Box" src="./static/videos/sim/Paxini/box.mp4"></video>
+                                <div class="carousel-controls">
+                                    <button class="carousel-btn carousel-prev" aria-label="Previous object"><i class="fas fa-chevron-left"></i></button>
+                                    <span class="carousel-caption"><b>Box</b> &middot; SR 96.3%</span>
+                                    <button class="carousel-btn carousel-next" aria-label="Next object"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                                <div class="carousel-dots"></div>
+                            </div>
+                        </div>
+                        <div class="column is-one-third has-text-centered">
+                            <h2 class="title is-5 hand-title">
+                                <img src="./static/images/XHand.png" alt="XHand" class="hand-icon" />
+                                <span>XHand</span>
+                            </h2>
+                            <div class="carousel" data-hand="XHand">
+                                <video class="carousel-img" autoplay muted loop playsinline style="display: block; width: 100%; border-radius: 5px;" aria-label="XHand: Box" src="./static/videos/sim/XHand/box.mp4"></video>
+                                <div class="carousel-controls">
+                                    <button class="carousel-btn carousel-prev" aria-label="Previous object"><i class="fas fa-chevron-left"></i></button>
+                                    <span class="carousel-caption"><b>Box</b> &middot; SR 96.3%</span>
+                                    <button class="carousel-btn carousel-next" aria-label="Next object"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                                <div class="carousel-dots"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row is-full-width">
+                        <h2 class="title is-4">Quantitative Results</h2>
+                    </div>
+                    <div class="table-container">
+                        <table class="table is-striped is-narrow is-hoverable is-fullwidth results-table">
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>Object / Traj ID</th>
+                                    <th>SR (%) &uarr;</th>
+                                    <th>Pos. err. (cm) &darr;</th>
+                                    <th>Rot. err. (&deg;) &darr;</th>
+                                    <th>Joint err. (&deg;) &darr;</th>
+                                    <th>Contact err. (cm) &darr;</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>ObjDex</td><td rowspan="3">Box / s04_01</td><td>50.1</td><td><b>1.01</b></td><td><b>1.58</b></td><td>6.14</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (w/o Contact)</td><td>87.4</td><td>1.73</td><td>2.21</td><td>1.99</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (full)</td><td><b>99.9</b></td><td>2.05</td><td>3.02</td><td><b>1.92</b></td><td>2.35</td></tr>
+
+                                <tr><td>ObjDex</td><td rowspan="3">Espresso / s01_01</td><td>45.1</td><td>2.16</td><td><b>4.13</b></td><td>2.08</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (w/o Contact)</td><td>47.8</td><td>2.87</td><td>6.74</td><td>9.87</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (full)</td><td><b>98.7</b></td><td><b>1.99</b></td><td>4.40</td><td><b>1.94</b></td><td>3.61</td></tr>
+
+                                <tr><td>ObjDex</td><td rowspan="3">Laptop / s09_02</td><td>77.4</td><td><b>0.52</b></td><td><b>1.14</b></td><td>5.92</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (w/o Contact)</td><td>51.3</td><td>2.93</td><td>1.72</td><td>3.23</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (full)</td><td><b>94.2</b></td><td>2.24</td><td>3.13</td><td><b>2.19</b></td><td>4.24</td></tr>
+
+                                <tr><td>ObjDex</td><td rowspan="3">Microwave / s04_01</td><td>98.4</td><td>3.13</td><td><b>1.71</b></td><td>2.58</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (w/o Contact)</td><td>76.2</td><td>3.28</td><td>2.56</td><td>2.98</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (full)</td><td><b>98.6</b></td><td><b>2.42</b></td><td>2.40</td><td><b>1.82</b></td><td>1.92</td></tr>
+
+                                <tr><td>ObjDex</td><td rowspan="3">Mixer / s08_01</td><td>34.4</td><td><b>1.76</b></td><td><b>3.50</b></td><td>3.36</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (w/o Contact)</td><td>73.2</td><td>2.25</td><td>4.19</td><td>5.16</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (full)</td><td><b>99.5</b></td><td>2.77</td><td>3.91</td><td><b>2.41</b></td><td>2.91</td></tr>
+
+                                <tr><td>ObjDex</td><td rowspan="3">Notebook / s08_03</td><td>7.8</td><td><b>0.70</b></td><td><b>2.08</b></td><td>5.79</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (w/o Contact)</td><td>12.5</td><td>2.27</td><td>4.79</td><td><b>3.25</b></td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (full)</td><td><b>66.0</b></td><td>2.94</td><td>4.68</td><td>4.06</td><td>6.65</td></tr>
+
+                                <tr class="mean-row"><td>ObjDex</td><td rowspan="3">Mean</td><td>52.2</td><td><b>1.55</b></td><td><b>2.36</b></td><td>4.31</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (w/o Contact)</td><td>58.1</td><td>2.55</td><td>3.70</td><td>4.41</td><td>&ndash;</td></tr>
+                                <tr><td>PatternDex (full)</td><td><b>92.8</b></td><td>2.40</td><td>3.59</td><td><b>2.39</b></td><td>3.61</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <span style="font-size: 110%">
+                        <span style="font-weight: bold">Quantitative results of the guided policy on the ARCTIC dataset.</span>
+                        SR denotes success rate. Pos., Rot., and Joint err. denote the position, rotation, and joint angle errors of the object.
+                        Contact err. denotes the average distance from the robot hand to the estimated contact points. Standard deviations are
+                        reported in the paper.
+                    </span>
+                    <br>
+                    <br>
+                    <div class="table-container">
+                        <table class="table is-striped is-narrow is-hoverable is-fullwidth results-table">
+                            <thead>
+                                <tr>
+                                    <th>Robot</th>
+                                    <th>Box / s04_01</th>
+                                    <th>Espresso / s01_01</th>
+                                    <th>Laptop / s09_02</th>
+                                    <th>Microwave / s04_01</th>
+                                    <th>Mixer / s08_01</th>
+                                    <th>Notebook / s08_03</th>
+                                    <th>Mean</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Allegro</td><td><b>99.9&plusmn;0.1</b></td><td><b>98.7&plusmn;1.3</b></td><td><b>94.2&plusmn;5.1</b></td><td>98.6&plusmn;2.8</td><td><b>99.5&plusmn;0.7</b></td><td>66.0&plusmn;2.2</td><td><b>92.8&plusmn;12.2</b></td></tr>
+                                <tr><td>Shadow</td><td>96.3&plusmn;4.5</td><td>88.5&plusmn;5.6</td><td>51.6&plusmn;2.3</td><td>78.0&plusmn;3.2</td><td>97.0&plusmn;2.0</td><td><b>92.3&plusmn;4.7</b></td><td>84.0&plusmn;15.8</td></tr>
+                                <tr><td>Paxini</td><td>96.7&plusmn;3.2</td><td>74.9&plusmn;2.9</td><td>93.8&plusmn;5.8</td><td><b>99.0&plusmn;1.3</b></td><td>12.6&plusmn;0.0</td><td>64.0&plusmn;1.7</td><td>73.5&plusmn;30.0</td></tr>
+                                <tr><td>XHand</td><td>95.4&plusmn;5.0</td><td>73.8&plusmn;3.7</td><td>40.0&plusmn;6.7</td><td>91.9&plusmn;7.0</td><td>91.0&plusmn;3.9</td><td>37.3&plusmn;1.8</td><td>71.6&plusmn;24.3</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <span style="font-size: 110%">
+                        <span style="font-weight: bold">Cross-embodiment success rates (%) of the guided policy.</span>
+                        The pattern encoder \(\mathcal{E}\) is trained with Allegro and kept frozen, and only the decoder \(\mathcal{D}\) and
+                        the embodiment encoder \(\phi\) are fine-tuned for Shadow, Paxini, and XHand.
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sim-to-real -->
+    <section class="section section-divided">
+        <div class="container is-max-widescreen">
+            <div class="rows">
+                <div class="rows is-centered ">
+                    <div class="row is-full-width">
+                        <h2 class="title is-2 has-text-centered">Sim-to-Real: One Human Video Is Enough</h2>
+                        <p style="font-size: 125%">
+                            Since PatternDex has already learned the interaction pattern from ARCTIC, a new real-world task needs only a single
+                            human demonstration video and no robot demonstrations. CoTracker3 tracks the position and the hinge angle of the microwave,
+                            HaMeR tracks the human wrist pose, and the tracked trajectories are fed into the guidance predictor. The guided policy is
+                            trained in Isaac Gym and deployed directly on an Allegro hand mounted on an xArm6. The robot opens the door in <b>7 of 10 trials</b>,
+                            with the door angle increasing from 0&deg; to 74.2&deg; over 100 steps.
+                        </p>
+                    </div>
+                    <br>
+                    <div class="row is-full-width has-text-centered">
+                        <p style="font-size: 130%"><b>Pipeline</b></p>
+                        <p class="video-sub">Tracked wrist and object state &rarr; guidance &rarr; simulator training &rarr; real robot</p>
+                        <img src="./static/images/fig5a.png" class="interpolation-image" alt="Sim-to-real pipeline"
+                            style="display: block; width: 100%; margin-left: auto; margin-right: auto" />
+                    </div>
+                    <br>
+                    <div class="row is-full-width has-text-centered">
+                        <p style="font-size: 130%"><b>Real-world rollout</b></p>
+                        <p class="video-sub">Allegro hand on xArm6 opening the microwave with the policy trained in simulation</p>
+                        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 5px;">
+                            <source src="./static/videos/real_microwave_rollout.mp4" type="video/mp4">
+                        </video>
+                        <p style="margin-top: 0.75rem;">
+                            The insets show the tracked door angle, the front camera view, and the human demonstration used as reference.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section section-divided" id="BibTeX">
+        <div class="container is-max-widescreen content">
+            <h2 class="title">BibTeX</h2>
+            <pre><code>@article{patterndex2026,
+    title   = {PatternDex: Learning Interaction Patterns to Guide Reinforcement Learning of Bimanual Dexterous Manipulation of Articulated Objects},
+    year    = {2026},
+}</code></pre>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container is-max-widescreen">
+            <div class="columns is-centered">
+                <div class="column">
+                    <div class="content has-text-centered">
+                        <p>
+                            Website template borrowed from <a href="https://github.com/nerfies/nerfies.github.io">NeRFies</a>
+                            and <a href="https://droid-dataset.github.io/">DROID</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            var objects = [
+                { name: 'Box', file: 'box' },
+                { name: 'Espresso machine', file: 'espresso' },
+                { name: 'Laptop', file: 'laptop' },
+                { name: 'Microwave', file: 'microwave' },
+                { name: 'Mixer', file: 'mixer' },
+                { name: 'Notebook', file: 'notebook' }
+            ];
+            var successRates = {
+                Shadow: ['96.3', '88.5', '51.6', '78.0', '97.0', '92.3'],
+                Paxini: ['96.7', '74.9', '93.8', '99.0', '12.6', '64.0'],
+                XHand:  ['95.4', '73.8', '40.0', '91.9', '91.0', '37.3']
+            };
+            document.querySelectorAll('.carousel').forEach(function (el) {
+                var hand = el.dataset.hand;
+                var img = el.querySelector('.carousel-img');
+                var caption = el.querySelector('.carousel-caption');
+                var dots = el.querySelector('.carousel-dots');
+                var index = 0;
+                objects.forEach(function (_, i) {
+                    var d = document.createElement('span');
+                    d.className = 'carousel-dot';
+                    d.addEventListener('click', function () { show(i); });
+                    dots.appendChild(d);
+                });
+                function show(i) {
+                    index = (i + objects.length) % objects.length;
+                    var o = objects[index];
+                    img.src = './static/videos/sim/' + hand + '/' + o.file + '.mp4';
+                    img.setAttribute('aria-label', hand + ': ' + o.name);
+                    img.load();
+                    var playing = img.play();
+                    if (playing && playing.catch) { playing.catch(function () {}); }
+                    caption.innerHTML = '<b>' + o.name + '</b> &middot; SR ' + successRates[hand][index] + '%';
+                    dots.querySelectorAll('.carousel-dot').forEach(function (d, j) {
+                        d.classList.toggle('is-active', j === index);
+                    });
+                }
+                el.querySelector('.carousel-prev').addEventListener('click', function () { show(index - 1); });
+                el.querySelector('.carousel-next').addEventListener('click', function () { show(index + 1); });
+                show(0);
+            });
+        })();
+    </script>
+</body>
+</html>
