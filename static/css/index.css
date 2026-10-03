@@ -233,3 +233,8 @@ video {
 .hand-title-left {
     justify-content: flex-start;
 }
+
+/* Make the hidden attribute win over Bulma display rules */
+[hidden] {
+    display: none !important;
+}
